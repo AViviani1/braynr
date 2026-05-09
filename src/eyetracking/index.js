@@ -36,21 +36,33 @@ export const EyeTracker = {
   },
 
   async start(onGaze) {
+    await wg().begin();
     wg().setGazeListener((data) => {
       if (data) onGaze({ x: data.x, y: data.y });
     });
-    await wg().begin();
     wg().showVideoPreview(true);
     wg().showFaceOverlay(false);
-    wg().showPredictionPoints(false);
+    wg().showPredictionPoints(true);
+    wg().applyKalmanFilter(true);
   },
 
   showPreview(visible) {
     wg()?.showVideoPreview(visible);
   },
 
-  clearData() {
-    wg()?.clearData();
+  showGazeDot(visible) {
+    wg()?.showPredictionPoints(visible);
+  },
+
+  // Explicitly record a calibration sample at (x, y) screen pixels.
+  // Called on every calibration dot click so WebGazer's regression model
+  // knows exactly where the user was looking.
+  recordPoint(x, y) {
+    wg()?.recordScreenPosition(x, y);
+  },
+
+  async clearData() {
+    await wg()?.clearData();
   },
 
   stop() {

@@ -73,8 +73,7 @@ input[type="range"] {
 
 /* ── WebGazer video: pin to bottom-right ────────────────────────────── */
 #webgazerVideoFeed,
-#webgazerFaceOverlay,
-#webgazerGazeDot {
+#webgazerFaceOverlay {
   position: fixed !important;
   bottom: 16px !important;
   right: 16px !important;
@@ -85,6 +84,12 @@ input[type="range"] {
   border-radius: 8px !important;
   z-index: 450 !important;
   opacity: 0.85;
+}
+
+/* ── WebGazer gaze dot: only override z-index, let WebGazer control position/transform ── */
+#webgazerGazeDot {
+  z-index: 9999 !important;
+  pointer-events: none !important;
 }
 
 /* ── RSVP word fade ─────────────────────────────────────────────────── */

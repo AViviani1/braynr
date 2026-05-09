@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Home, Focus, FileText, Zap, Eye, Upload,
-  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical,
+  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical, Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { SAMPLE_TEXT } from "@/sampleText";
+import { TutorQuiz } from "@/components/TutorQuiz";
 // @ts-ignore
 import { EyeTracker } from "@/eyetracking";
 
@@ -151,13 +152,12 @@ const ET_DOTS = [
   [10,50],[50,50],[90,50],
   [10,90],[50,90],[90,90],
 ];
-const CLICKS_PER_DOT = 5;
+const CLICKS_PER_DOT = 1;
 
 function EyeTrackingOverlay({ text, fileName, onExit }: { text: string; fileName: string; onExit: () => void }) {
   const [phase, setPhase]         = useState<"loading"|"intro"|"calibration"|"tracking"|"error">("loading");
   const [error, setError]         = useState("");
   const [dotClicks, setDotClicks] = useState(Array(9).fill(0));
-  const [gazePos, setGazePos]     = useState<{x:number;y:number}|null>(null);
   const readingRef = useRef<HTMLDivElement>(null);
 
   const total      = dotClicks.reduce((s: number, n: number) => s + n, 0);
@@ -174,14 +174,18 @@ function EyeTrackingOverlay({ text, fileName, onExit }: { text: string; fileName
   const handleStart = async () => {
     setPhase("calibration");
     try {
-      EyeTracker.clearData();
-      await EyeTracker.start((pos: {x:number;y:number}) => setGazePos(pos));
+      await EyeTracker.clearData();
+      await EyeTracker.start(() => {});
     } catch (e: any) {
       setError(e.message || "Camera error"); setPhase("error");
     }
   };
 
   const handleDotClick = (idx: number) => {
+    const [px, py] = ET_DOTS[idx];
+    const screenX = (px / 100) * window.innerWidth;
+    const screenY = (py / 100) * window.innerHeight;
+    EyeTracker.recordPoint(screenX, screenY);
     setDotClicks((prev: number[]) => {
       if (prev[idx] >= CLICKS_PER_DOT) return prev;
       const next = [...prev]; next[idx]++; return next;
@@ -258,7 +262,7 @@ function EyeTrackingOverlay({ text, fileName, onExit }: { text: string; fileName
       })}
       {calibrated && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-          <Button onClick={() => { EyeTracker.showPreview(false); setPhase("tracking"); }}>
+          <Button onClick={() => { EyeTracker.showPreview(false); EyeTracker.showGazeDot(true); setPhase("tracking"); }}>
             Calibrated — Start reading
           </Button>
         </div>
@@ -277,15 +281,11 @@ function EyeTrackingOverlay({ text, fileName, onExit }: { text: string; fileName
         <div style={{ fontFamily:"'OpenDyslexic',system-ui,sans-serif", fontSize:"1.05rem",
           lineHeight:1.8, maxWidth:680, margin:"0 auto" }}>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-5">{fileName}</p>
-          {text.split(/\n\n+/).map((p, i) => (
+          {text.split("\n").filter(p => p.trim()).map((p, i) => (
             <p key={i} className="mb-5 text-foreground">{p.trim()}</p>
           ))}
         </div>
       </div>
-      {gazePos && (
-        <div className="pointer-events-none fixed z-[60] w-5 h-5 rounded-full bg-red-500/60 border-2 border-red-500"
-          style={{ left:gazePos.x, top:gazePos.y, transform:"translate(-50%,-50%)", transition:"left 0.06s,top 0.06s" }} />
-      )}
     </div>
   );
 }
@@ -318,6 +318,7 @@ export function StudyWorkspace() {
   const [focusMask, setFocusMask]     = useState(false);
   const [showRsvp, setShowRsvp]       = useState(false);
   const [showEyeTrack, setShowEyeTrack] = useState(false);
+  const [tutorMode, setTutorMode]     = useState(false);
 
   function loadFile(file: File) {
     const reader = new FileReader();
@@ -358,6 +359,8 @@ export function StudyWorkspace() {
             onClick={() => text && setShowRsvp(true)} active={showRsvp} />
           <ToolbarBtn icon={<Eye className="h-5 w-5" />} label="Eye Track"
             onClick={() => text && setShowEyeTrack(true)} active={showEyeTrack} />
+          <ToolbarBtn icon={<Brain className="h-5 w-5" />} label="Tutor"
+            onClick={() => setTutorMode(t => !t)} active={tutorMode} />
           <ToolbarBtn icon={<Upload className="h-5 w-5" />} label="Carica"
             onClick={() => fileRef.current?.click()} />
         </div>
@@ -405,8 +408,11 @@ export function StudyWorkspace() {
                 maxWidth: settings.columnWidth,
                 margin: "0 auto",
               }}>
-                {text.split(/\n\n+/).map((para, i) => (
-                  <p key={i} className="mb-5 text-foreground">{para.trim()}</p>
+                {text.split("\n").filter(p => p.trim()).map((para, i) => (
+                  <div key={i}>
+                    <p className="mb-2 text-foreground">{para.trim()}</p>
+                    {tutorMode && i > 0 && <TutorQuiz paragraph={para.trim()} />}
+                  </div>
                 ))}
               </div>
             ) : (
