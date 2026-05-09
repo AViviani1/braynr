@@ -1,54 +1,59 @@
 /**
- * Eye Tracking Module — implemented with WebGazer.js v2.1.0
+ * Eye Tracking Module — WebGazer.js v2.1.0
  *
- * WebGazer uses the webcam + TensorFlow.js face-mesh to predict
- * gaze coordinates. It learns from click events automatically:
- * every time the user clicks on screen while WebGazer is running,
- * that position is recorded as a calibration sample.
+ * WebGazer is loaded as a standalone UMD script (/public/webgazer.js)
+ * and sets window.webgazer. Serving it locally avoids bundler issues
+ * with @mediapipe/face_mesh and CDN availability problems.
  *
- * CDN: https://unpkg.com/webgazer@2.1.0/webgazer.js
+ * WebGazer trains automatically from click events: every click while
+ * active is recorded as a calibration sample.
+ *
  * Docs: https://webgazer.cs.brown.edu/
  */
 
-const CDN_URL = 'https://unpkg.com/webgazer@2.1.0/webgazer.js';
+function wg() {
+  return window.webgazer;
+}
 
 export const EyeTracker = {
   isSupported() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   },
 
+  // WebGazer is already injected via <script> in index.html — just wait for it.
   load() {
-    if (window.webgazer) return Promise.resolve();
     return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = CDN_URL;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Failed to load WebGazer from CDN'));
-      document.head.appendChild(s);
+      if (wg()) { resolve(); return; }
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (wg()) { clearInterval(poll); resolve(); return; }
+        if (Date.now() - start > 10000) {
+          clearInterval(poll);
+          reject(new Error('WebGazer did not initialise within 10 s'));
+        }
+      }, 100);
     });
   },
 
   async start(onGaze) {
-    await window.webgazer
-      .setRegression('ridge')
-      .setGazeListener((data) => {
-        if (data) onGaze({ x: data.x, y: data.y });
-      })
-      .begin();
-    window.webgazer.showVideoPreview(true);
-    window.webgazer.showFaceOverlay(false);
-    window.webgazer.showPredictionPoints(false);
+    wg().setGazeListener((data) => {
+      if (data) onGaze({ x: data.x, y: data.y });
+    });
+    await wg().begin();
+    wg().showVideoPreview(true);
+    wg().showFaceOverlay(false);
+    wg().showPredictionPoints(false);
   },
 
   showPreview(visible) {
-    window.webgazer?.showVideoPreview(visible);
+    wg()?.showVideoPreview(visible);
   },
 
   clearData() {
-    window.webgazer?.clearData();
+    wg()?.clearData();
   },
 
   stop() {
-    try { window.webgazer?.end(); } catch (_) {}
+    try { wg()?.end(); } catch (_) {}
   },
 };
