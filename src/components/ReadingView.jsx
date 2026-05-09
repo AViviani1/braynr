@@ -18,7 +18,7 @@ const OVERLAY_COLORS = {
   Rose: 'rgba(255, 150, 160, 0.22)',
 };
 
-export default function ReadingView({ text, fileName, onBack }) {
+export default function ReadingView({ text, fileName, onBack, onOpenEyeTracking }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [focusMask, setFocusMask] = useState(false);
   const [rhythmicMode, setRhythmicMode] = useState(false);
@@ -63,6 +63,7 @@ export default function ReadingView({ text, fileName, onBack }) {
           onToggleFocusMask={() => setFocusMask((v) => !v)}
           rhythmicMode={rhythmicMode}
           onToggleRhythmicMode={() => setRhythmicMode(true)}
+          onOpenEyeTracking={onOpenEyeTracking}
           onBack={onBack}
         />
       )}

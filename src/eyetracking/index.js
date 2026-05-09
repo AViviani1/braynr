@@ -1,34 +1,54 @@
 /**
- * Eye Tracking Placeholder Module
+ * Eye Tracking Module — implemented with WebGazer.js v2.1.0
  *
- * Interface contract for future eye tracking integration.
- * Library TBD — candidates: WebGazer.js, GazeCloud API, Tobii Web SDK.
+ * WebGazer uses the webcam + TensorFlow.js face-mesh to predict
+ * gaze coordinates. It learns from click events automatically:
+ * every time the user clicks on screen while WebGazer is running,
+ * that position is recorded as a calibration sample.
  *
- * When implemented, this module should:
- *   - calibrate() — run a calibration routine (returns Promise)
- *   - start(onGaze) — begin tracking; calls onGaze({ x, y }) on each sample
- *   - stop() — end tracking session
- *   - isSupported() — returns bool (webcam + browser support check)
+ * CDN: https://unpkg.com/webgazer@2.1.0/webgazer.js
+ * Docs: https://webgazer.cs.brown.edu/
  */
+
+const CDN_URL = 'https://unpkg.com/webgazer@2.1.0/webgazer.js';
 
 export const EyeTracker = {
   isSupported() {
-    // TODO: check for webcam access + required browser APIs
-    return false;
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   },
 
-  async calibrate() {
-    // TODO: display calibration targets and collect gaze samples
-    console.warn('[EyeTracker] calibrate() not yet implemented');
+  load() {
+    if (window.webgazer) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = CDN_URL;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load WebGazer from CDN'));
+      document.head.appendChild(s);
+    });
   },
 
-  start(onGaze) {
-    // TODO: start the tracking loop and invoke onGaze({ x, y }) per frame
-    console.warn('[EyeTracker] start() not yet implemented');
+  async start(onGaze) {
+    await window.webgazer
+      .setRegression('ridge')
+      .setGazeListener((data) => {
+        if (data) onGaze({ x: data.x, y: data.y });
+      })
+      .begin();
+    window.webgazer.showVideoPreview(true);
+    window.webgazer.showFaceOverlay(false);
+    window.webgazer.showPredictionPoints(false);
+  },
+
+  showPreview(visible) {
+    window.webgazer?.showVideoPreview(visible);
+  },
+
+  clearData() {
+    window.webgazer?.clearData();
   },
 
   stop() {
-    // TODO: tear down tracking loop and release webcam
-    console.warn('[EyeTracker] stop() not yet implemented');
+    try { window.webgazer?.end(); } catch (_) {}
   },
 };

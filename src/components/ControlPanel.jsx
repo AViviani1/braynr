@@ -7,6 +7,7 @@ export default function ControlPanel({
   onToggleFocusMask,
   rhythmicMode,
   onToggleRhythmicMode,
+  onOpenEyeTracking,
   onBack,
 }) {
   function set(key, value) {
@@ -80,7 +81,9 @@ export default function ControlPanel({
       </div>
 
       <div className="panel-footer">
-        <span className="eyetrack-badge">👁 Eye tracking — coming soon</span>
+        <button className="btn-eyetrack" onClick={onOpenEyeTracking}>
+          👁 Eye Tracking Mode
+        </button>
       </div>
     </div>
   );
