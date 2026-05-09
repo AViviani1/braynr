@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Upload } from 'lucide-react';
 import { SAMPLE_TEXT } from '../sampleText';
 
 export default function UploadScreen({ onTextReady }) {
@@ -22,41 +23,46 @@ export default function UploadScreen({ onTextReady }) {
   }
 
   return (
-    <div className="upload-screen">
-      <div className="upload-hero">
-        <h1 className="brand">Braynr</h1>
-        <p className="tagline">A reading tool designed for dyslexic readers</p>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 gap-5">
+
+      <div className="text-center mb-2">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Braynr</h1>
+        <p className="text-sm text-muted-foreground mt-1">A reading tool designed for dyslexic students</p>
       </div>
 
       <div
-        className="drop-zone"
+        className="w-full max-w-md flex flex-col items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card p-12 text-center cursor-pointer hover:border-ring hover:bg-muted/30 transition-colors"
         onClick={() => inputRef.current.click()}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        onDragEnter={(e) => e.currentTarget.classList.add('drag-over')}
-        onDragLeave={(e) => e.currentTarget.classList.remove('drag-over')}
       >
-        <span className="drop-icon">📄</span>
-        <p>Drop a <strong>.txt</strong> file here, or click to browse</p>
+        <Upload className="h-10 w-10 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-foreground">Drop a <strong>.txt</strong> file here</p>
+          <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
+        </div>
         <input
           ref={inputRef}
           type="file"
           accept=".txt"
-          style={{ display: 'none' }}
+          className="hidden"
           onChange={handleFile}
         />
       </div>
 
-      <div className="upload-divider">
-        <span>or</span>
+      <div className="flex items-center gap-3 w-full max-w-md">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs text-muted-foreground">or</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       <button
-        className="btn-sample"
+        className="w-full max-w-md rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         onClick={() => onTextReady(SAMPLE_TEXT, 'Ancient Rome (sample)')}
       >
-        Load sample text — History of Ancient Rome
+        Load sample — History of Ancient Rome
       </button>
+
     </div>
   );
 }

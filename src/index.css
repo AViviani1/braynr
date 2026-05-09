@@ -1,678 +1,74 @@
 @import url('https://fonts.googleapis.com/css2?family=OpenDyslexic:wght@400;700&display=swap');
+@import "tailwindcss";
 
-/* ─── CSS Custom Properties ─────────────────────────────────────────── */
+/* ── insight-navigator design tokens (exact copy) ───────────────────── */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background:        var(--background);
+  --color-foreground:        var(--foreground);
+  --color-card:              var(--card);
+  --color-card-foreground:   var(--card-foreground);
+  --color-primary:           var(--primary);
+  --color-primary-foreground:var(--primary-foreground);
+  --color-secondary:         var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:             var(--muted);
+  --color-muted-foreground:  var(--muted-foreground);
+  --color-accent:            var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border:            var(--border);
+  --color-input:             var(--input);
+  --color-ring:              var(--ring);
+}
+
 :root {
-  --font-reading: 'OpenDyslexic', system-ui, sans-serif;
-
-  --color-bg: #fafaf8;
-  --color-surface: #ffffff;
-  --color-border: #d8d5d0;
-  --color-text: #1a1814;
-  --color-text-muted: #6b6560;
-  --color-accent: #4a6fa5;
-  --color-accent-hover: #3a5f95;
-
-  --panel-width: 280px;
-  --panel-bg: #ffffff;
-  --panel-shadow: 0 4px 24px rgba(0,0,0,0.12);
-  --radius: 10px;
-
-  /* reading area — overridden by JS */
-  --letter-spacing: 2px;
-  --word-spacing: 4px;
-  --line-height: 1.8;
-  --column-width: 680px;
+  --radius: 0.625rem;
+  --background:          oklch(1 0 0);
+  --foreground:          oklch(0.129 0.042 264.695);
+  --card:                oklch(1 0 0);
+  --card-foreground:     oklch(0.129 0.042 264.695);
+  --primary:             oklch(0.208 0.042 265.755);
+  --primary-foreground:  oklch(0.984 0.003 247.858);
+  --secondary:           oklch(0.968 0.007 247.896);
+  --secondary-foreground:oklch(0.208 0.042 265.755);
+  --muted:               oklch(0.968 0.007 247.896);
+  --muted-foreground:    oklch(0.554 0.046 257.417);
+  --accent:              oklch(0.968 0.007 247.896);
+  --accent-foreground:   oklch(0.208 0.042 265.755);
+  --border:              oklch(0.929 0.013 255.508);
+  --input:               oklch(0.929 0.013 255.508);
+  --ring:                oklch(0.704 0.04 256.788);
 }
 
-/* ─── Reset ──────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: var(--font-reading);
-  background: var(--color-bg);
-  color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  * { border-color: var(--color-border); box-sizing: border-box; }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: system-ui, 'Segoe UI', sans-serif;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { min-height: 100svh; }
 }
 
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+/* ── Reading area: OpenDyslexic ─────────────────────────────────────── */
+.reading-font {
+  font-family: 'OpenDyslexic', system-ui, sans-serif;
 }
 
-/* ─── Upload Screen ──────────────────────────────────────────────────── */
-.upload-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100svh;
-  padding: 40px 24px;
-  gap: 24px;
-}
-
-.upload-hero {
-  text-align: center;
-}
-
-.brand {
-  font-size: 3rem;
-  font-weight: 700;
-  margin: 0 0 8px;
-  color: var(--color-accent);
-  letter-spacing: -1px;
-}
-
-.tagline {
-  font-size: 1.05rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.drop-zone {
-  border: 2.5px dashed var(--color-border);
-  border-radius: var(--radius);
-  padding: 48px 64px;
-  text-align: center;
-  cursor: pointer;
-  background: var(--color-surface);
-  transition: border-color 0.2s, background 0.2s;
-  max-width: 480px;
+/* ── Custom range slider ────────────────────────────────────────────── */
+input[type="range"] {
+  accent-color: var(--color-primary);
   width: 100%;
-}
-
-.drop-zone:hover,
-.drop-zone.drag-over {
-  border-color: var(--color-accent);
-  background: rgba(74, 111, 165, 0.04);
-}
-
-.drop-icon { font-size: 2.5rem; display: block; margin-bottom: 12px; }
-
-.drop-zone p {
-  font-size: 1rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.upload-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  max-width: 480px;
-  width: 100%;
-}
-
-.upload-divider::before,
-.upload-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.btn-sample {
-  background: var(--color-accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  padding: 14px 28px;
-  font-size: 1rem;
-  font-family: var(--font-reading);
+  height: 4px;
   cursor: pointer;
-  transition: background 0.15s;
 }
 
-.btn-sample:hover { background: var(--color-accent-hover); }
-
-/* ─── Reading View ───────────────────────────────────────────────────── */
-.reading-view {
-  position: relative;
-  min-height: 100svh;
-  padding: 40px calc(var(--panel-width) + 32px) 80px 32px;
-}
-
-.reading-body {
-  max-width: var(--column-width);
-  margin: 0 auto;
-}
-
-.file-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin: 0 0 24px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.reading-para {
-  font-size: 1.125rem;
-  letter-spacing: var(--letter-spacing);
-  word-spacing: var(--word-spacing);
-  line-height: var(--line-height);
-  margin: 0 0 1.5em;
-}
-
-/* ─── Color Overlay ──────────────────────────────────────────────────── */
-.color-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 5;
-  transition: background 0.3s;
-}
-
-/* ─── Focus Mask ─────────────────────────────────────────────────────── */
-.focus-mask {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.45);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.focus-mask--top { top: 0; }
-.focus-mask--bottom { bottom: 0; height: 100%; }
-
-/* ─── Control Panel ──────────────────────────────────────────────────── */
-.control-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: var(--panel-width);
-  height: 100svh;
-  background: var(--panel-bg);
-  box-shadow: var(--panel-shadow);
-  overflow-y: auto;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  z-index: 100;
-  border-left: 1px solid var(--color-border);
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.panel-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--color-text-muted);
-}
-
-.btn-back {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.78rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  color: var(--color-text-muted);
-}
-
-.btn-back:hover { background: var(--color-bg); }
-
-.ctrl-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.88rem;
-  color: var(--color-text);
-}
-
-.ctrl-value {
-  float: right;
-  color: var(--color-text-muted);
-}
-
-.ctrl-label input[type="range"] {
-  width: 100%;
-  accent-color: var(--color-accent);
-}
-
-.ctrl-group { display: flex; flex-direction: column; gap: 8px; }
-
-.ctrl-group-label {
-  font-size: 0.88rem;
-  color: var(--color-text);
-}
-
-.overlay-btns {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.btn-overlay {
-  flex: 1;
-  border: 1.5px solid var(--color-border);
-  border-radius: 6px;
-  padding: 5px 4px;
-  font-size: 0.78rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  background: #fff;
-  transition: border-color 0.15s;
-  min-width: 46px;
-}
-
-.btn-overlay.active {
-  border-color: var(--color-accent);
-  background: rgba(74,111,165,0.08);
-  font-weight: 700;
-}
-
-.btn-overlay--yellow { background: rgba(255,240,100,0.25); }
-.btn-overlay--blue   { background: rgba(100,180,255,0.20); }
-.btn-overlay--rose   { background: rgba(255,150,160,0.22); }
-
-.ctrl-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.88rem;
-}
-
-.toggle {
-  border: 1.5px solid var(--color-border);
-  border-radius: 20px;
-  padding: 4px 14px;
-  font-size: 0.78rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  font-weight: 700;
-  transition: background 0.15s, color 0.15s;
-  background: #fff;
-  color: var(--color-text-muted);
-}
-
-.toggle.on {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.panel-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
-}
-
-.eyetrack-badge {
-  display: block;
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  background: var(--color-bg);
-  border: 1px dashed var(--color-border);
-  border-radius: 6px;
-  padding: 8px;
-}
-
-/* ─── Rhythmic / RSVP Mode ───────────────────────────────────────────── */
-.rsvp-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--color-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px;
-  z-index: 200;
-}
-
-.rsvp-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.btn-exit-rsvp {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  color: var(--color-text-muted);
-}
-
-.btn-exit-rsvp:hover { background: var(--color-surface); }
-
-.rsvp-progress {
-  font-size: 0.88rem;
-  color: var(--color-text-muted);
-}
-
-.rsvp-stage {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.rsvp-word {
-  font-size: clamp(2rem, 6vw, 4rem);
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: 2px;
-  line-height: 1.3;
-  max-width: 800px;
-  transition: opacity 0.15s ease;
-}
-
-.rsvp-word.fade-in  { opacity: 1; }
-.rsvp-word.fade-out { opacity: 0; }
-
-.rsvp-controls {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.btn-rsvp-speed {
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  min-width: 120px;
-}
-
-.btn-rsvp-speed:hover { background: var(--color-bg); }
-
-.btn-rsvp-play {
-  background: var(--color-accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  padding: 14px 32px;
-  font-size: 1.05rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  font-weight: 700;
-  min-width: 140px;
-}
-
-.btn-rsvp-play:hover { background: var(--color-accent-hover); }
-
-.rsvp-bpm-row {
-  width: 100%;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.rsvp-bpm-label {
-  width: 100%;
-  text-align: center;
-}
-
-.rsvp-bpm-label input[type="range"] {
-  width: 100%;
-  accent-color: var(--color-accent);
-}
-
-.rsvp-keys-hint {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-/* ─── Eye Tracking Button (in panel footer) ──────────────────────────── */
-.btn-eyetrack {
-  display: block;
-  width: 100%;
-  background: var(--color-accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  font-size: 0.9rem;
-  font-family: var(--font-reading);
-  cursor: pointer;
-  font-weight: 700;
-  transition: background 0.15s;
-}
-
-.btn-eyetrack:hover { background: var(--color-accent-hover); }
-
-/* ─── Eye Tracking Screens ───────────────────────────────────────────── */
-.et-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--color-bg);
-  z-index: 300;
-  overflow-y: auto;
-}
-
-.et-centered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 100svh;
-  padding: 40px 24px;
-  gap: 20px;
-}
-
-.et-title {
-  font-size: 1.8rem;
-  margin: 0;
-  color: var(--color-text);
-}
-
-.et-subtitle {
-  max-width: 480px;
-  color: var(--color-text-muted);
-  font-size: 1rem;
-  margin: 0;
-}
-
-.et-intro-list {
-  text-align: left;
-  color: var(--color-text-muted);
-  line-height: 2.2;
-  max-width: 380px;
-  margin: 0;
-  padding-left: 20px;
-}
-
-.et-intro-btns {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-/* spinner */
-.et-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-accent);
-  border-radius: 50%;
-  animation: et-spin 0.8s linear infinite;
-}
-
-@keyframes et-spin { to { transform: rotate(360deg); } }
-
-.et-error {
-  color: #c53030;
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* ─── Calibration ────────────────────────────────────────────────────── */
-.et-calibration {
-  position: relative;
-  width: 100%;
-  height: 100svh;
-  background: #0f0f14;
-}
-
-.et-cal-header {
-  position: absolute;
-  top: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  z-index: 10;
-  white-space: nowrap;
-}
-
-.et-cal-header p {
-  margin: 0;
-  color: #c0c0c8;
-  font-size: 0.95rem;
-}
-
-.et-cal-bar-wrap {
-  width: 220px;
-  height: 6px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.et-cal-bar {
-  height: 100%;
-  background: var(--color-accent);
-  border-radius: 3px;
-  transition: width 0.2s;
-}
-
-.et-cal-count {
-  font-size: 0.78rem;
-  color: #888;
-}
-
-/* calibration dot */
-.et-dot {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2.5px solid #4a6fa5;
-  background: rgba(74, 111, 165, 0.12);
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  overflow: hidden;
-  padding: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  transition: border-color 0.2s;
-}
-
-.et-dot:hover { border-color: #7aabff; }
-
-.et-dot.done {
-  border-color: #38a169;
-  background: rgba(56, 161, 105, 0.15);
-}
-
-.et-dot-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100%;
-  background: rgba(74, 111, 165, 0.55);
-  transform-origin: bottom center;
-  transition: transform 0.15s ease;
-}
-
-.et-dot.done .et-dot-fill { background: rgba(56, 161, 105, 0.55); }
-
-.et-dot-count {
-  position: relative;
-  z-index: 1;
-  font-size: 0.65rem;
-  color: #fff;
-  margin-bottom: 3px;
-  font-weight: 700;
-}
-
-.et-cal-ready {
-  position: absolute;
-  bottom: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* ─── Tracking phase ─────────────────────────────────────────────────── */
-.et-tracking {
-  padding: 72px 24px 80px;
-}
-
-.et-track-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  z-index: 400;
-}
-
-.et-track-label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.et-reading-content {
-  max-width: var(--column-width, 680px);
-  margin: 0 auto;
-}
-
-/* gaze cursor */
-.et-gaze-dot {
-  position: fixed;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(220, 50, 50, 0.55);
-  border: 2px solid rgba(220, 50, 50, 0.85);
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  z-index: 500;
-  transition: left 0.06s linear, top 0.06s linear;
-}
-
-/* ─── WebGazer video preview — pinned to bottom-right ───────────────── */
+/* ── WebGazer video: pin to bottom-right ────────────────────────────── */
 #webgazerVideoFeed,
 #webgazerFaceOverlay,
 #webgazerGazeDot {
@@ -687,3 +83,28 @@ body {
   z-index: 450 !important;
   opacity: 0.85;
 }
+
+/* ── RSVP word fade ─────────────────────────────────────────────────── */
+.rsvp-fade-in  { opacity: 1; transition: opacity 0.15s ease; }
+.rsvp-fade-out { opacity: 0; transition: opacity 0.15s ease; }
+
+/* ── Calibration dot fill ───────────────────────────────────────────── */
+.cal-dot-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 100%;
+  transform-origin: bottom center;
+  transition: transform 0.15s ease;
+}
+
+/* ── Focus mask ─────────────────────────────────────────────────────── */
+.focus-mask-top,
+.focus-mask-bottom {
+  position: absolute;
+  left: 0; right: 0;
+  background: rgba(0,0,0,0.45);
+  pointer-events: none;
+  z-index: 10;
+}
+.focus-mask-top    { top: 0; }
+.focus-mask-bottom { bottom: 0; height: 100%; }
