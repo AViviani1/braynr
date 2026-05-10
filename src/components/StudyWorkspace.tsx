@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Home, Focus, FileText, Zap, Eye, Upload,
-  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical, Brain, GraduationCap,
+  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical, Brain, GraduationCap, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,22 @@ const DEFAULT_SETTINGS: ReadingSettings = {
   wordSpacing:   4,
   lineHeight:    1.8,
   columnWidth:   680,
+};
+
+/* ─── keyword types ──────────────────────────────────────────────────── */
+type KeywordColor = "Yellow" | "Blue" | "Rose" | "Green";
+
+interface Keyword {
+  id: string;
+  text: string;
+  color: KeywordColor;
+}
+
+const KEYWORD_COLORS: Record<KeywordColor, string> = {
+  Yellow: "rgba(255,235,60,0.65)",
+  Blue:   "rgba(80,170,255,0.50)",
+  Rose:   "rgba(255,120,145,0.50)",
+  Green:  "rgba(80,210,120,0.55)",
 };
 
 /* ─── RSVP ──────────────────────────────────────────────────────────── */
@@ -307,6 +323,24 @@ function ToolbarBtn({
   );
 }
 
+/* ─── Highlighted paragraph ──────────────────────────────────────────── */
+function HighlightedParagraph({ text, keywords }: { text: string; keywords: Keyword[] }) {
+  if (!keywords.length) return <>{text}</>;
+  const escaped = keywords.map(k => k.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = text.split(pattern);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const kw = keywords.find(k => k.text.toLowerCase() === part.toLowerCase());
+        return kw
+          ? <mark key={i} style={{ background: KEYWORD_COLORS[kw.color], borderRadius: 3, padding: "0 1px" }}>{part}</mark>
+          : <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 /* ─── Main workspace ─────────────────────────────────────────────────── */
 export function StudyWorkspace() {
   const fileRef      = useRef<HTMLInputElement>(null);
@@ -321,6 +355,39 @@ export function StudyWorkspace() {
   const [showEyeTrack, setShowEyeTrack] = useState(false);
   const [tutorMode, setTutorMode]     = useState(false);
   const [showTest, setShowTest]       = useState(false);
+  const [keywords, setKeywords]       = useState<Keyword[]>([]);
+  const [selPopup, setSelPopup]       = useState<{ x: number; y: number; text: string } | null>(null);
+
+  /* detect text selection inside the reading area */
+  useEffect(() => {
+    function handleMouseUp(e: MouseEvent) {
+      const sel = window.getSelection();
+      const selected = sel?.toString().trim();
+      if (!selected || !containerRef.current?.contains(e.target as Node)) {
+        setSelPopup(null);
+        return;
+      }
+      const range = sel!.getRangeAt(0);
+      const rect  = range.getBoundingClientRect();
+      setSelPopup({ x: rect.left + rect.width / 2, y: rect.top, text: selected });
+    }
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => document.removeEventListener("mouseup", handleMouseUp);
+  }, []);
+
+  function addKeyword(text: string) {
+    if (!text) return;
+    if (keywords.some(k => k.text.toLowerCase() === text.toLowerCase())) return;
+    setKeywords(prev => [...prev, { id: crypto.randomUUID(), text, color: "Yellow" }]);
+  }
+
+  function removeKeyword(id: string) {
+    setKeywords(prev => prev.filter(k => k.id !== id));
+  }
+
+  function updateKeywordColor(id: string, color: KeywordColor) {
+    setKeywords(prev => prev.map(k => k.id === id ? { ...k, color } : k));
+  }
 
   function loadFile(file: File) {
     const reader = new FileReader();
@@ -414,7 +481,9 @@ export function StudyWorkspace() {
               }}>
                 {text.split("\n").filter(p => p.trim()).map((para, i) => (
                   <div key={i}>
-                    <p className="mb-2 text-foreground">{para.trim()}</p>
+                    <p className="mb-2 text-foreground">
+                      <HighlightedParagraph text={para.trim()} keywords={keywords} />
+                    </p>
                     {tutorMode && i > 0 && <TutorQuiz paragraph={para.trim()} />}
                   </div>
                 ))}
@@ -439,9 +508,11 @@ export function StudyWorkspace() {
           </div>
         </main>
 
-        {/* Right: tabbed controls */}
-        <aside className="flex w-72 flex-col flex-shrink-0">
-          <Tabs defaultValue="display" className="flex flex-col h-full">
+        {/* Right: tabbed controls + keywords */}
+        <aside className="flex w-72 flex-col flex-shrink-0 overflow-hidden">
+
+          {/* 3-tab section — natural height */}
+          <Tabs defaultValue="display">
             <div className="border-b border-border px-3 py-2">
               <TabsList className="w-full">
                 <TabsTrigger value="display"  className="flex-1 text-xs">Display</TabsTrigger>
@@ -450,53 +521,109 @@ export function StudyWorkspace() {
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-auto">
-              <TabsContent value="display" className="p-4 space-y-5 mt-0">
-                <SliderRow label="Letter spacing" value={settings.letterSpacing} min={0} max={10} step={0.5} unit="px"
-                  onChange={v => set("letterSpacing", v)} />
-                <SliderRow label="Word spacing" value={settings.wordSpacing} min={0} max={20} step={1} unit="px"
-                  onChange={v => set("wordSpacing", v)} />
-                <SliderRow label="Line height" value={settings.lineHeight} min={1.2} max={3.0} step={0.1}
-                  onChange={v => set("lineHeight", v)} />
-                <SliderRow label="Column width" value={settings.columnWidth} min={300} max={900} step={10} unit="px"
-                  onChange={v => set("columnWidth", v)} />
-              </TabsContent>
+            <TabsContent value="display" className="p-4 space-y-5 mt-0">
+              <SliderRow label="Letter spacing" value={settings.letterSpacing} min={0} max={10} step={0.5} unit="px"
+                onChange={v => set("letterSpacing", v)} />
+              <SliderRow label="Word spacing" value={settings.wordSpacing} min={0} max={20} step={1} unit="px"
+                onChange={v => set("wordSpacing", v)} />
+              <SliderRow label="Line height" value={settings.lineHeight} min={1.2} max={3.0} step={0.1}
+                onChange={v => set("lineHeight", v)} />
+              <SliderRow label="Column width" value={settings.columnWidth} min={300} max={900} step={10} unit="px"
+                onChange={v => set("columnWidth", v)} />
+            </TabsContent>
 
-              <TabsContent value="overlays" className="p-4 space-y-5 mt-0">
-                <div className="space-y-2">
-                  <Label className="text-xs">Color overlay</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["None","Yellow","Blue","Rose"] as OverlayKey[]).map(o => (
-                      <button key={o} onClick={() => setOverlay(o)}
-                        className={cn(
-                          "rounded-md border px-3 py-2 text-xs font-medium transition-colors",
-                          o === "Yellow" && "bg-yellow-100 border-yellow-300 text-yellow-900",
-                          o === "Blue"   && "bg-blue-100 border-blue-300 text-blue-900",
-                          o === "Rose"   && "bg-rose-100 border-rose-300 text-rose-900",
-                          o === "None"   && "bg-card border-border text-foreground",
-                          overlay === o  && "ring-2 ring-ring ring-offset-1",
-                        )}>
-                        {o}
-                      </button>
-                    ))}
-                  </div>
+            <TabsContent value="overlays" className="p-4 space-y-5 mt-0">
+              <div className="space-y-2">
+                <Label className="text-xs">Color overlay</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["None","Yellow","Blue","Rose"] as OverlayKey[]).map(o => (
+                    <button key={o} onClick={() => setOverlay(o)}
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-xs font-medium transition-colors",
+                        o === "Yellow" && "bg-yellow-100 border-yellow-300 text-yellow-900",
+                        o === "Blue"   && "bg-blue-100 border-blue-300 text-blue-900",
+                        o === "Rose"   && "bg-rose-100 border-rose-300 text-rose-900",
+                        o === "None"   && "bg-card border-border text-foreground",
+                        overlay === o  && "ring-2 ring-ring ring-offset-1",
+                      )}>
+                      {o}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="focus-mask" className="text-xs cursor-pointer">Focus mask</Label>
-                  <Switch id="focus-mask" checked={focusMask} onCheckedChange={setFocusMask} />
-                </div>
-              </TabsContent>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="focus-mask" className="text-xs cursor-pointer">Focus mask</Label>
+                <Switch id="focus-mask" checked={focusMask} onCheckedChange={setFocusMask} />
+              </div>
+            </TabsContent>
 
-              <TabsContent value="modes" className="p-4 space-y-3 mt-0">
-                <Button className="w-full" onClick={() => text && setShowRsvp(true)}>
-                  <Zap /> Rhythmic mode (RSVP)
-                </Button>
-                <Button variant="outline" className="w-full" onClick={() => text && setShowEyeTrack(true)}>
-                  <Eye /> Eye Tracking Mode
-                </Button>
-              </TabsContent>
-            </div>
+            <TabsContent value="modes" className="p-4 space-y-3 mt-0">
+              <Button className="w-full" onClick={() => text && setShowRsvp(true)}>
+                <Zap /> Rhythmic mode (RSVP)
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => text && setShowEyeTrack(true)}>
+                <Eye /> Eye Tracking Mode
+              </Button>
+            </TabsContent>
           </Tabs>
+
+          {/* Keywords — permanent section below the tabs */}
+          <div className="flex flex-col flex-1 overflow-hidden border-t border-border">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-shrink-0">
+              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keywords</span>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {keywords.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Seleziona una parola nel testo per aggiungerla come keyword.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {keywords.map(kw => (
+                    <div key={kw.id} className="rounded-lg border border-border bg-card p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="flex-1 truncate text-sm font-medium rounded px-1"
+                          style={{ background: KEYWORD_COLORS[kw.color] }}
+                        >
+                          {kw.text}
+                        </span>
+                        <button
+                          onClick={() => removeKeyword(kw.id)}
+                          className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Color knobs */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Colore</span>
+                        <div className="flex gap-2">
+                          {(["Yellow", "Blue", "Rose", "Green"] as KeywordColor[]).map(color => (
+                            <button
+                              key={color}
+                              title={color}
+                              onClick={() => updateKeywordColor(kw.id, color)}
+                              className={cn(
+                                "h-5 w-5 rounded-full border-2 transition-all",
+                                kw.color === color
+                                  ? "border-foreground scale-125"
+                                  : "border-transparent hover:scale-110",
+                              )}
+                              style={{ background: KEYWORD_COLORS[color] }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
         </aside>
       </div>
 
@@ -510,6 +637,27 @@ export function StudyWorkspace() {
         <EyeTrackingOverlay text={text} fileName={fileName} onExit={() => setShowEyeTrack(false)} />
       )}
       {showTest && text && <TestQuiz text={text} onExit={() => setShowTest(false)} />}
+
+      {/* Selection popup */}
+      {selPopup && (
+        <button
+          className="fixed z-40 flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
+          style={{
+            left: selPopup.x,
+            top: selPopup.y - 10,
+            transform: "translate(-50%, -100%)",
+          }}
+          onMouseDown={e => {
+            e.preventDefault();
+            addKeyword(selPopup.text);
+            setSelPopup(null);
+            window.getSelection()?.removeAllRanges();
+          }}
+        >
+          <Tag className="h-4 w-4" />
+          Add keyword
+        </button>
+      )}
     </div>
   );
 }
