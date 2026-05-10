@@ -152,28 +152,9 @@ export async function evaluateAnswer(
   return result;
 }
 
-// Curated subset of templates confirmed to exist on memegen.link
 const PREFERRED_TEMPLATES = [
-  "drake",        // Drakeposting — disapprove/approve (2 panel)
-  "doge",         // Doge — classic single image
-  "fry",          // Futurama Fry — not sure if (1 panel)
-  "fine",         // This is Fine — 1 panel
-  "blb",          // Bad Luck Brian — 1 panel
-  "buzz",         // X Everywhere — 2 panel
-  "picard",       // Picard Facepalm — 1 panel
-  "facepalm",     // Facepalm — 1 panel
-  "wonka",        // Condescending Wonka — 1 panel
-  "yoda",         // Yoda — 1 panel
-  "aag",          // Ancient Aliens Guy — 1 panel
-  "success",      // Success Kid — 1 panel
-  "mordor",       // One Does Not Simply — 1 panel
-  "morpheus",     // Matrix Morpheus — 1 panel
-  "rollsafe",     // Roll Safe — 1 panel
-  "woman-cat",    // Woman Yelling at a Cat — 2 panel
-  "harold",       // Hide the Pain Harold — 1 panel
-  "pooh",         // Tuxedo Winnie the Pooh — 2 panel
-  "philosoraptor",// Philosoraptor — 1 panel
-  "spongebob",    // Mocking Spongebob — 1 panel
+  "drake",      // Drakeposting — disapprove/approve (2 panel)
+  "woman-cat",  // Woman Yelling at a Cat — 2 panel
 ];
 
 async function fetchValidTemplates(): Promise<string[]> {
