@@ -86,10 +86,18 @@ input[type="range"] {
   opacity: 0.85;
 }
 
-/* ── WebGazer gaze dot: only override z-index, let WebGazer control position/transform ── */
+/* ── WebGazer gaze dot ── */
 #webgazerGazeDot {
   z-index: 9999 !important;
   pointer-events: none !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: rgba(120, 120, 120, 0.45) !important;
+  /* re-center: WebGazer offsets by half the original 10px size (-5px);
+     override to half of new 30px size */
+  margin-left: -15px !important;
+  margin-top: -15px !important;
 }
 
 /* ── RSVP word fade ─────────────────────────────────────────────────── */
