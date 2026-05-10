@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Mic, Square, Loader2, CheckCircle, XCircle, GraduationCap, RefreshCw } from "lucide-react";
+import { X, Mic, Square, Loader2, CheckCircle, XCircle, GraduationCap, RefreshCw, Sparkles } from "lucide-react";
 import { QuizMemeHelper } from "@/components/QuizMemeHelper";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { generateFinalQuiz, evaluateAnswer, EvaluationResult } from "@/lib/groq";
+import { generateFinalQuiz, evaluateAnswer, generateQuizFeedback, EvaluationResult } from "@/lib/groq";
 
 interface QuestionResult {
   question: string;
@@ -11,25 +11,73 @@ interface QuestionResult {
   evaluation: EvaluationResult;
 }
 
+export interface KeywordHint {
+  text: string;
+  color: string; // resolved CSS color string
+}
+
 type Phase = "ready" | "listening" | "evaluating";
 
+/* ─── inline keyword highlighter ────────────────────────────────────── */
+function HighlightedText({ text, keywords }: { text: string; keywords: KeywordHint[] }) {
+  if (!keywords.length) return <>{text}</>;
+  const escaped = keywords.map(k => k.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts   = text.split(pattern);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const kw = keywords.find(k => k.text.toLowerCase() === part.toLowerCase());
+        return kw
+          ? <mark key={i} style={{ background: kw.color, borderRadius: 3, padding: "0 1px" }}>{part}</mark>
+          : <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 /* ─── TestQuiz overlay ───────────────────────────────────────────────── */
-export function TestQuiz({ text, onExit }: { text: string; onExit: () => void }) {
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [results, setResults]     = useState<QuestionResult[]>([]);
-  const [idx, setIdx]             = useState(0);
-  const [phase, setPhase]         = useState<Phase>("ready");
+export function TestQuiz({
+  text,
+  keywords = [],
+  onExit,
+}: {
+  text: string;
+  keywords?: KeywordHint[];
+  onExit: () => void;
+}) {
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
+  const [questions, setQuestions]   = useState<string[]>([]);
+  const [results, setResults]       = useState<QuestionResult[]>([]);
+  const [idx, setIdx]               = useState(0);
+  const [phase, setPhase]           = useState<Phase>("ready");
   const [transcript, setTranscript] = useState("");
+  const [feedback, setFeedback]     = useState<string | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
   const finalRef       = useRef("");
 
+  const keywordTexts = keywords.map(k => k.text);
+
   useEffect(() => {
-    generateFinalQuiz(text)
+    generateFinalQuiz(text, keywordTexts)
       .then(({ questions: qs }) => { setQuestions(qs); setLoading(false); })
       .catch(e => { setError(e instanceof Error ? e.message : "Failed to generate test"); setLoading(false); });
   }, []);
+
+  const isComplete = questions.length > 0 && results.length >= questions.length;
+
+  /* generate encouraging feedback once quiz is done */
+  useEffect(() => {
+    if (!isComplete) return;
+    setFeedbackLoading(true);
+    generateQuizFeedback(
+      results.map(r => ({ question: r.question, correct: r.evaluation.correct, feedback: r.evaluation.feedback })),
+    )
+      .then(text => { setFeedback(text); setFeedbackLoading(false); })
+      .catch(() => { setFeedbackLoading(false); });
+  }, [isComplete]);
 
   function startListening() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -103,19 +151,25 @@ export function TestQuiz({ text, onExit }: { text: string; onExit: () => void })
   );
 
   /* ── complete ── */
-  const isComplete = questions.length > 0 && results.length >= questions.length;
   if (isComplete) {
-    const score = results.filter(r => r.evaluation.correct).length;
     return (
       <Overlay onExit={onExit}>
         <div className="flex flex-1 flex-col items-center justify-center p-8 gap-6 max-w-xl mx-auto w-full overflow-auto">
-          {/* Score badge */}
-          <div className="flex flex-col items-center gap-2">
-            <GraduationCap className="h-10 w-10 text-primary" />
-            <p className="text-2xl font-bold text-foreground">{score} / {questions.length}</p>
-            <p className="text-sm text-muted-foreground">
-              {score === questions.length ? "Perfetto!" : score === 0 ? "Riprova!" : "Buon lavoro!"}
-            </p>
+
+          {/* Encouraging feedback */}
+          <div className="w-full rounded-xl border border-border bg-card p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="text-sm font-semibold text-foreground">Feedback</span>
+            </div>
+            {feedbackLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating feedback…
+              </div>
+            ) : feedback ? (
+              <p className="text-sm text-foreground leading-relaxed">{feedback}</p>
+            ) : null}
           </div>
 
           {/* Per-question summary */}
@@ -126,7 +180,9 @@ export function TestQuiz({ text, onExit }: { text: string; onExit: () => void })
                   {r.evaluation.correct
                     ? <CheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                     : <XCircle    className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />}
-                  <p className="text-sm font-medium text-foreground">{r.question}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    <HighlightedText text={r.question} keywords={keywords} />
+                  </p>
                 </div>
                 <div className="pl-6 space-y-1">
                   <p className="text-xs text-muted-foreground">
@@ -172,10 +228,12 @@ export function TestQuiz({ text, onExit }: { text: string; onExit: () => void })
             <GraduationCap className="h-3.5 w-3.5" />
             Domanda {idx + 1}
           </div>
-          <p className="text-base font-medium text-foreground leading-snug">{currentQuestion}</p>
+          <p className="text-base font-medium text-foreground leading-snug">
+            <HighlightedText text={currentQuestion} keywords={keywords} />
+          </p>
         </div>
 
-        {/* Live transcript box — visible once mic is active */}
+        {/* Live transcript box */}
         {phase !== "ready" && (
           <div className="w-full rounded-md border border-border bg-muted/40 min-h-[3.5rem] px-4 py-3">
             {hasText

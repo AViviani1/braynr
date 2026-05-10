@@ -636,7 +636,13 @@ export function StudyWorkspace() {
       {showEyeTrack && text && (
         <EyeTrackingOverlay text={text} fileName={fileName} onExit={() => setShowEyeTrack(false)} />
       )}
-      {showTest && text && <TestQuiz text={text} onExit={() => setShowTest(false)} />}
+      {showTest && text && (
+        <TestQuiz
+          text={text}
+          keywords={keywords.map(k => ({ text: k.text, color: KEYWORD_COLORS[k.color] }))}
+          onExit={() => setShowTest(false)}
+        />
+      )}
 
       {/* Selection popup */}
       {selPopup && (

@@ -66,14 +66,21 @@ export async function generateOpenQuestion(paragraph: string): Promise<OpenQuest
   return { question: result.question };
 }
 
-export async function generateFinalQuiz(text: string): Promise<{ questions: string[] }> {
+export async function generateFinalQuiz(
+  text: string,
+  keywords: string[] = [],
+): Promise<{ questions: string[] }> {
   const truncated = text.slice(0, 4000);
+  const keywordHint = keywords.length > 0
+    ? ` Make sure at least some questions focus on these key concepts: ${keywords.join(", ")}.`
+    : "";
+
   const result = await groqJson<{ questions: string[] }>(
     [
       {
         role: "system",
         content:
-          'You are a comprehension tutor. Given a text, generate exactly 3 short, simple open-ended questions (max 12 words each) that test understanding of the main ideas. Use the same language as the text. Return ONLY a JSON object: {"questions": ["...", "...", "..."]}',
+          `You are a comprehension tutor. Given a text, generate exactly 3 short, simple open-ended questions (max 12 words each) that test understanding of the main ideas.${keywordHint} Use the same language as the text. Return ONLY a JSON object: {"questions": ["...", "...", "..."]}`,
       },
       {
         role: "user",
@@ -87,6 +94,32 @@ export async function generateFinalQuiz(text: string): Promise<{ questions: stri
     throw new Error("Unexpected response format");
   }
   return { questions: result.questions };
+}
+
+export async function generateQuizFeedback(
+  results: { question: string; correct: boolean; feedback: string }[],
+): Promise<string> {
+  const summary = results
+    .map((r, i) => `Q${i + 1}: "${r.question}" — ${r.correct ? "Correct" : "Wrong"}. ${r.feedback}`)
+    .join("\n");
+
+  const result = await groqJson<{ feedback: string }>(
+    [
+      {
+        role: "system",
+        content:
+          'You are a warm and encouraging tutor. Given quiz results, write 2-3 sentences of personalized feedback. Mention which topics deserve more review without being discouraging. Be positive and motivating. Use the same language as the questions. Return ONLY JSON: {"feedback": "..."}',
+      },
+      {
+        role: "user",
+        content: `Quiz results:\n${summary}`,
+      },
+    ],
+    250,
+  );
+
+  if (typeof result.feedback !== "string") throw new Error("Invalid feedback format");
+  return result.feedback;
 }
 
 export async function evaluateAnswer(
