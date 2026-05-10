@@ -112,7 +112,7 @@ export default function ControlPanel({
               className="w-full flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
             >
               <Zap className="h-4 w-4" />
-              Rhythmic mode (RSVP)
+              Rhythmic mode
             </button>
             <button
               onClick={onOpenEyeTracking}

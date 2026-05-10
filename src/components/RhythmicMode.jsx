@@ -52,7 +52,7 @@ export default function RhythmicMode({ text, onExit }) {
 
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <span className="text-sm font-medium text-foreground">Rhythmic Mode (RSVP)</span>
+        <span className="text-sm font-medium text-foreground">Rhythmic Mode</span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{pct}%</span>
           <button onClick={onExit} className="rounded-md p-1.5 hover:bg-accent transition-colors">

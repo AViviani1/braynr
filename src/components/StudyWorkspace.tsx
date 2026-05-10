@@ -114,7 +114,7 @@ function RsvpOverlay({ text, onExit }: { text: string; onExit: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground">
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <span className="text-sm font-medium">Rhythmic Mode (RSVP)</span>
+        <span className="text-sm font-medium">Rhythmic Mode</span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{pct}%</span>
           <Button variant="ghost" size="icon" onClick={onExit}><X /></Button>
@@ -424,13 +424,13 @@ export function StudyWorkspace() {
 
         {/* Center group */}
         <div className="flex items-center gap-1">
-          <ToolbarBtn icon={<Zap className="h-5 w-5" />} label="RSVP"
+          <ToolbarBtn icon={<Zap className="h-5 w-5" />} label="Rhythmic"
             onClick={() => text && setShowRsvp(true)} active={showRsvp} />
           <ToolbarBtn icon={<Eye className="h-5 w-5" />} label="Eye Track"
             onClick={() => text && setShowEyeTrack(true)} active={showEyeTrack} />
           <ToolbarBtn icon={<Brain className="h-5 w-5" />} label="Tutor"
             onClick={() => setTutorMode(t => !t)} active={tutorMode} />
-          <ToolbarBtn icon={<GraduationCap className="h-5 w-5" />} label="Test"
+          <ToolbarBtn icon={<GraduationCap className="h-5 w-5" />} label="Prof"
             onClick={() => text && setShowTest(true)} active={showTest} />
           <ToolbarBtn icon={<Upload className="h-5 w-5" />} label="Carica"
             onClick={() => fileRef.current?.click()} />
@@ -559,7 +559,7 @@ export function StudyWorkspace() {
 
             <TabsContent value="modes" className="p-4 space-y-3 mt-0">
               <Button className="w-full" onClick={() => text && setShowRsvp(true)}>
-                <Zap /> Rhythmic mode (RSVP)
+                <Zap /> Rhythmic mode
               </Button>
               <Button variant="outline" className="w-full" onClick={() => text && setShowEyeTrack(true)}>
                 <Eye /> Eye Tracking Mode

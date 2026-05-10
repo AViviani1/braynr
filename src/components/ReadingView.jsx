@@ -58,7 +58,7 @@ export default function ReadingView({ text, fileName, onBack, onOpenEyeTracking 
             className="flex flex-col items-center gap-0.5 rounded-md px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors"
           >
             <Zap className="h-5 w-5" />
-            <span>RSVP</span>
+            <span>Rhythmic Mode</span>
           </button>
           <button
             onClick={onOpenEyeTracking}
