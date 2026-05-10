@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Brain, Mic, Square, Loader2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { QuizMemeHelper } from "@/components/QuizMemeHelper";
 import { cn } from "@/lib/utils";
 import { generateOpenQuestion, evaluateAnswer, EvaluationResult } from "@/lib/groq";
 
@@ -248,6 +249,13 @@ export function TutorQuiz({ paragraph }: { paragraph: string }) {
           <p className="text-xs leading-relaxed">{evaluation.feedback}</p>
         </div>
       </div>
+
+      {/* meme helper on wrong answer */}
+      {!evaluation.correct && (
+        <div className="pl-6">
+          <QuizMemeHelper paragraph={paragraph} correctAnswer={evaluation.correctAnswer} />
+        </div>
+      )}
 
       <div className="flex justify-end pl-6">
         <button

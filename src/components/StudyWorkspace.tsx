@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Home, Focus, FileText, Zap, Eye, Upload,
-  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical, Brain,
+  ChevronLeft, ChevronRight, Play, Pause, X, MoreVertical, Brain, GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { SAMPLE_TEXT } from "@/sampleText";
 import { TutorQuiz } from "@/components/TutorQuiz";
+import { TestQuiz } from "@/components/TestQuiz";
 // @ts-ignore
 import { EyeTracker } from "@/eyetracking";
 
@@ -319,6 +320,7 @@ export function StudyWorkspace() {
   const [showRsvp, setShowRsvp]       = useState(false);
   const [showEyeTrack, setShowEyeTrack] = useState(false);
   const [tutorMode, setTutorMode]     = useState(false);
+  const [showTest, setShowTest]       = useState(false);
 
   function loadFile(file: File) {
     const reader = new FileReader();
@@ -361,6 +363,8 @@ export function StudyWorkspace() {
             onClick={() => text && setShowEyeTrack(true)} active={showEyeTrack} />
           <ToolbarBtn icon={<Brain className="h-5 w-5" />} label="Tutor"
             onClick={() => setTutorMode(t => !t)} active={tutorMode} />
+          <ToolbarBtn icon={<GraduationCap className="h-5 w-5" />} label="Test"
+            onClick={() => text && setShowTest(true)} active={showTest} />
           <ToolbarBtn icon={<Upload className="h-5 w-5" />} label="Carica"
             onClick={() => fileRef.current?.click()} />
         </div>
@@ -505,6 +509,7 @@ export function StudyWorkspace() {
       {showEyeTrack && text && (
         <EyeTrackingOverlay text={text} fileName={fileName} onExit={() => setShowEyeTrack(false)} />
       )}
+      {showTest && text && <TestQuiz text={text} onExit={() => setShowTest(false)} />}
     </div>
   );
 }
