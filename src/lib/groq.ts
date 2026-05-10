@@ -153,8 +153,7 @@ export async function evaluateAnswer(
 }
 
 const PREFERRED_TEMPLATES = [
-  "drake",      // Drakeposting — disapprove/approve (2 panel)
-  "woman-cat",  // Woman Yelling at a Cat — 2 panel
+  "drake",
 ];
 
 async function fetchValidTemplates(): Promise<string[]> {
